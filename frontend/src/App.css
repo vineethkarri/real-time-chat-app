@@ -1,0 +1,15 @@
+.App {
+  text-align: center;
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+button {
+  margin: 5px;
+}
+
+input {
+  margin: 5px;
+  padding: 5px;
+}
