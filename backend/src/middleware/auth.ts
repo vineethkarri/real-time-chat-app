@@ -1,10 +1,9 @@
 import { Socket } from 'socket.io';
 
 export const authMiddleware = (socket: Socket, next: (err?: Error) => void) => {
-  const token = socket.handshake.auth.token; // Firebase ID token
+  const token = socket.handshake.auth.token;
   if (token) {
-    // In production: Verify token with Firebase Admin SDK
-    // For demo: Assume valid if present
+    socket.handshake.auth.user = socket.handshake.auth.user || 'Anonymous';
     return next();
   }
   next(new Error('Authentication error'));

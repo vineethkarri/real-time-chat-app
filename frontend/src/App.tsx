@@ -68,6 +68,13 @@ const App: React.FC = () => {
     socket.emit('sendMessage', { roomId, user: user.displayName, text });
   };
 
+  const leaveRoom = () => {
+    socket.emit('leaveRoom', { roomId, user: user.displayName });
+    setRoomId('');
+    setMessages([]);
+    setUsersInRoom([]);
+  };
+
   const toggleDarkMode = () => {
     setIsDarkMode(!isDarkMode);
     document.documentElement.classList.toggle('dark');
@@ -81,6 +88,7 @@ const App: React.FC = () => {
           <button 
             onClick={signIn} 
             className="bg-blue-600 text-white px-6 py-3 rounded-lg shadow-md hover:bg-blue-700 transition duration-300"
+            data-testid="sign-in-button"
           >
             Sign in with Google
           </button>
@@ -113,7 +121,16 @@ const App: React.FC = () => {
             <main className="w-full md:w-2/3 lg:w-3/4 flex flex-col">
               {roomId ? (
                 <>
-                  <h3 className="text-xl font-bold mb-3 text-gray-800 dark:text-white">Room: {roomId}</h3>
+                  <div className="flex justify-between items-center mb-3">
+                    <h3 className="text-xl font-bold text-gray-800 dark:text-white">Room: {roomId}</h3>
+                    <button
+                      onClick={leaveRoom}
+                      className="bg-yellow-600 text-white px-4 py-2 rounded-lg shadow hover:bg-yellow-700 transition duration-300"
+                      data-testid="leave-room-button"
+                    >
+                      Leave Room
+                    </button>
+                  </div>
                   <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">Online Users: {usersInRoom.join(', ')}</p>
                   <ChatWindow messages={messages} onSend={sendMessage} user={user.displayName} />
                 </>

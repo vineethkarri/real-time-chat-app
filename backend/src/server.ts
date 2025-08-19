@@ -10,7 +10,6 @@ app.use(cors());
 const httpServer = createServer(app);
 const io = new Server(httpServer, { cors: { origin: '*' } });
 
-// In-memory storage for rooms and messages
 const rooms: Map<string, Room> = new Map();
 
 io.use(authMiddleware);
@@ -18,17 +17,15 @@ io.use(authMiddleware);
 io.on('connection', (socket: Socket) => {
   console.log('User connected:', socket.id);
 
-  // Join room
   socket.on('joinRoom', ({ roomId, user }: { roomId: string; user: string }) => {
     socket.join(roomId);
     if (!rooms.has(roomId)) rooms.set(roomId, { messages: [], users: [] });
     const room = rooms.get(roomId);
-    if (room) room.users.push(user);
+    if (room && !room.users.includes(user)) room.users.push(user);
     io.to(roomId).emit('userList', room?.users || []);
     io.emit('roomList', Array.from(rooms.keys()));
   });
 
-  // Handle messages
   socket.on('sendMessage', ({ roomId, user, text }: { roomId: string; user: string; text: string }) => {
     const room = rooms.get(roomId);
     if (room) {
@@ -38,15 +35,34 @@ io.on('connection', (socket: Socket) => {
     }
   });
 
-  // Create room
   socket.on('createRoom', ({ roomId }: { roomId: string }) => {
     if (!rooms.has(roomId)) rooms.set(roomId, { messages: [], users: [] });
     io.emit('roomList', Array.from(rooms.keys()));
   });
 
+  socket.on('leaveRoom', ({ roomId, user }: { roomId: string; user: string }) => {
+    socket.leave(roomId);
+    const room = rooms.get(roomId);
+    if (room) {
+      room.users = room.users.filter(u => u !== user);
+      io.to(roomId).emit('userList', room.users);
+      if (room.users.length === 0 && room.messages.length === 0) {
+        rooms.delete(roomId);
+        io.emit('roomList', Array.from(rooms.keys()));
+      }
+    }
+  });
+
   socket.on('disconnect', () => {
     console.log('User disconnected:', socket.id);
-    // Update user lists in rooms (simplified: iterate if needed)
+    rooms.forEach((room, roomId) => {
+      room.users = room.users.filter(user => user !== socket.handshake.auth.user);
+      io.to(roomId).emit('userList', room.users);
+      if (room.users.length === 0 && room.messages.length === 0) {
+        rooms.delete(roomId);
+      }
+    });
+    io.emit('roomList', Array.from(rooms.keys()));
   });
 });
 
